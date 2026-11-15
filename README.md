@@ -33,7 +33,7 @@ The project contains scripts for player control, procedural level generation, pu
 | `FlyEnemy.cs` | Controls flying enemy movement, including circular movement behavior, using its assigned stats. |
 | `Flower.cs` | Handles collectible objects, such as Flowers, and updates the player's collected amount. |
 | `SoundManager.cs` | Manages game audio and provides persistent sound management across scenes. |
-| `AttackHitBox.cs` | Stores gameplay state such as the player's collected Flower. |
+| `GameSession.cs` | Stores gameplay state such as the player's collected Flower. |
 | `CameraFolllowScript.cs` | Controls camera following behavior during gameplay. |
 | `AttackHitBox.cs` | Detects enemies or breakable objects inside the player's attack area and applies damage when the player attacks. |
 | `DropFlower.cs` | Handles the flower drop created when an enemy is defeated. |
