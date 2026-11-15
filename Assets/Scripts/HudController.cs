@@ -5,19 +5,29 @@ using UnityEngine.SceneManagement;
 
 public class HudController : MonoBehaviour
 {
-    [SerializeField] TMP_Text scoreLabel;
-    [SerializeField] TMP_Text bestLabel;
-    [SerializeField] GameObject pausePanel;
+    [Header("Player")]
+    [SerializeField] private PlayerController playerController;
+
+    [Header("HUD")]
+    [SerializeField] private TMP_Text scoreLabel;
+    [SerializeField] private TMP_Text bestLabel;
+    [SerializeField] private GameObject pausePanel;
 
     [Header("Finish Panel")]
-    [SerializeField] GameObject finishPanel;
-    [SerializeField] TMP_Text finishScoreLabel;
-    [SerializeField] TMP_Text finishBestLabel;
+    [SerializeField] private GameObject finishPanel;
+    [SerializeField] private TMP_Text finishScoreLabel;
+    [SerializeField] private TMP_Text finishBestLabel;
 
     private bool isPaused = false;
     private bool hasFinished = false;
 
-    void Update()
+    private void Awake()
+    {
+        if (playerController == null)
+            playerController = FindFirstObjectByType<PlayerController>();
+    }
+
+    private void Update()
     {
         if (scoreLabel != null)
             scoreLabel.text = "Dandelions: " + GameSession.Score;
@@ -30,46 +40,64 @@ public class HudController : MonoBehaviour
             Keyboard.current != null &&
             Keyboard.current.escapeKey.wasPressedThisFrame)
         {
-            if (isPaused) Resume();
-            else Pause();
+            if (isPaused)
+                Resume();
+            else
+                Pause();
         }
     }
 
     public void Pause()
     {
-        if (pausePanel == null || hasFinished) return;
+        if (pausePanel == null || hasFinished)
+            return;
 
         pausePanel.SetActive(true);
+
         Time.timeScale = 0f;
         isPaused = true;
+
+        if (playerController != null)
+            playerController.SetPaused(true);
     }
 
     public void Resume()
     {
-        if (pausePanel == null || hasFinished) return;
+        if (pausePanel == null || hasFinished)
+            return;
 
         pausePanel.SetActive(false);
+
         Time.timeScale = 1f;
         isPaused = false;
+
+        if (playerController != null)
+            playerController.SetPaused(false);
     }
 
     public void ShowFinishPanel()
     {
-        if (hasFinished) return;
+        if (hasFinished)
+            return;
 
         hasFinished = true;
 
         if (finishScoreLabel != null)
-            finishScoreLabel.text = "Final Dandelions Eaten: " + GameSession.Score;
+            finishScoreLabel.text =
+                "Final Dandelions Eaten: " + GameSession.Score;
 
         if (finishBestLabel != null)
-            finishBestLabel.text = "Dandelions Collect: " + GameSession.HighScore;
+            finishBestLabel.text =
+                "Dandelions Collect: " + GameSession.HighScore;
 
         if (finishPanel != null)
             finishPanel.SetActive(true);
 
         Time.timeScale = 0f;
         isPaused = true;
+
+        if (playerController != null)
+            playerController.SetPaused(true);
     }
 
     public void ReturnToTitleScreen()
@@ -84,7 +112,7 @@ public class HudController : MonoBehaviour
         Application.Quit();
     }
 
-    void OnDestroy()
+    private void OnDestroy()
     {
         Time.timeScale = 1f;
     }
