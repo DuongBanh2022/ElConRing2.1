@@ -15,7 +15,11 @@ public class Pot : MonoBehaviour
         hiddenSwitch = switchObject;
 
         if (hiddenSwitch != null)
+        {
+            hiddenSwitch.transform.SetParent(transform, true);
+            hiddenSwitch.transform.position = transform.position;
             hiddenSwitch.SetActive(false);
+        }
     }
 
     public void BreakPot()
@@ -25,9 +29,12 @@ public class Pot : MonoBehaviour
 
         isBroken = true;
 
-        // Reveal the hidden switch, if this pot has one.
         if (hiddenSwitch != null)
+        {
+            hiddenSwitch.transform.SetParent(null, true);
+            hiddenSwitch.transform.position = transform.position;
             hiddenSwitch.SetActive(true);
+        }
 
         if (explosionPrefab != null)
         {
@@ -47,7 +54,6 @@ public class Pot : MonoBehaviour
             );
         }
 
-        // Destroy the entire pot prefab.
         Destroy(transform.root.gameObject);
     }
 }

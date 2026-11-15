@@ -850,10 +850,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.CanvasScaler
-  m_UiScaleMode: 0
+  m_UiScaleMode: 1
   m_ReferencePixelsPerUnit: 100
   m_ScaleFactor: 1
-  m_ReferenceResolution: {x: 800, y: 600}
+  m_ReferenceResolution: {x: 1920, y: 1080}
   m_ScreenMatchMode: 0
   m_MatchWidthOrHeight: 0
   m_PhysicalUnit: 3
@@ -2659,10 +2659,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.CanvasScaler
-  m_UiScaleMode: 0
+  m_UiScaleMode: 1
   m_ReferencePixelsPerUnit: 100
   m_ScaleFactor: 1
-  m_ReferenceResolution: {x: 800, y: 600}
+  m_ReferenceResolution: {x: 1920, y: 1080}
   m_ScreenMatchMode: 0
   m_MatchWidthOrHeight: 0
   m_PhysicalUnit: 3
@@ -2758,6 +2758,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c97d969170925da409f87e8f7e7b27bb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HudController
+  playerController: {fileID: 0}
   scoreLabel: {fileID: 2063085523}
   bestLabel: {fileID: 0}
   pausePanel: {fileID: 247273576}
@@ -7768,25 +7769,25 @@ MonoBehaviour:
   roomHeight: 16
   initialRooms: 3
   roomsAhead: 2
-  platformCountPerRoom: 4
-  minPlatformWidth: 4
+  platformCountPerRoom: 2
+  minPlatformWidth: 2
   maxPlatformWidth: 6
   minPlatformHeight: 6
   maxPlatformHeight: 10
-  maxPlatformStep: 2
+  maxPlatformStep: 4
   hazardCountPerRoom: 2
   decorationCountPerRoom: 3
   puzzleController: {fileID: 1024853278}
   potPrefab: {fileID: 4558751837842946419, guid: 32c32dad095177449be264c517c9a2ba, type: 3}
   switchPrefab: {fileID: 6262277778229954292, guid: 7c2885fc30603c847979f757919d9a06, type: 3}
-  requiredSwitches: 5
-  objectiveRoomCount: 16
+  requiredSwitches: 6
+  objectiveRoomCount: 8
   switchInPotChance: 0.5
   additionalPotsPerRoom: 3
   potHazardSafeDistance: 5
   portalPrefab: {fileID: 6942963396919433297, guid: 7d2492a0a3ac35b44b3eaa1e4899b38d, type: 3}
-  portalRoomIndex: 9
-  portalOffsetX: 1.5
+  portalRoomIndex: 10
+  portalOffsetX: 2
   enemyPrefab: {fileID: 7172284358445878274, guid: a7ac48c42d7055449a766277f5a4d8d7, type: 3}
   airEnemyPrefab: {fileID: 8840882168121947047, guid: 20d7f525e09d83c49bd6ed903a3e4dcd, type: 3}
   flowersPrefab: {fileID: 3814130239673700350, guid: 2291d41dcaf300f488eee0cdc3d10cc7, type: 3}
@@ -7796,7 +7797,14 @@ MonoBehaviour:
   flowerHazardSafeDistance: 5
   enemyHazardSafeDistance: 4
   spawnSafeRadius: 6
-  randomSeed: 3
+  randomSeed: 6
+  minHorizontalGap: 3
+  maxHorizontalGap: 5
+  minVerticalGap: 3
+  maxVerticalGap: 6
+  missedSwitchDistance: 1.5
+  missedSwitchMinX: 5
+  missedSwitchMaxX: 15
 --- !u!4 &1533568990
 Transform:
   m_ObjectHideFlags: 0

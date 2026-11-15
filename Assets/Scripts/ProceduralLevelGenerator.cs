@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
+using UnityEngine.SceneManagement;
 
 public class ProceduralLevelGenerator : MonoBehaviour
 {
@@ -81,12 +82,33 @@ public class ProceduralLevelGenerator : MonoBehaviour
     [Header("Random Settings")]
     [SerializeField] private int randomSeed = 0;
 
+    [Header("Platform Spacing")]
+    [SerializeField] private int minHorizontalGap = 2;
+    [SerializeField] private int maxHorizontalGap = 4;
+    [SerializeField] private int minVerticalGap = 1;
+    [SerializeField] private int maxVerticalGap = 2;
+
+    [Header("Missed Switch Settings")]
+    [SerializeField] private float missedSwitchDistance = 1.5f;
+    [SerializeField] private int missedSwitchMinX = 5;
+    [SerializeField] private int missedSwitchMaxX = 15;
+
     private int nextRoomIndex = 0;
     private bool levelGenerated = false;
     private bool portalSpawned = false;
+    private bool isGame1Scene;
+
+    private GameObject spawnedPortal;
+    private int currentPortalRoomIndex = -1;
 
     private Dictionary<int, Vector3Int> puzzlePositions =
         new Dictionary<int, Vector3Int>();
+
+    private Dictionary<int, GameObject> puzzleCarriers =
+        new Dictionary<int, GameObject>();
+
+    private Dictionary<int, GameObject> puzzleSwitchObjects =
+        new Dictionary<int, GameObject>();
 
     private HashSet<Vector3Int> puzzleCells =
         new HashSet<Vector3Int>();
@@ -94,14 +116,26 @@ public class ProceduralLevelGenerator : MonoBehaviour
     private HashSet<Vector3Int> occupiedSpawnCells =
         new HashSet<Vector3Int>();
 
+    private void Awake()
+    {
+        isGame1Scene =
+            SceneManager.GetActiveScene().name == "Game1";
+
+        if (!isGame1Scene)
+            enabled = false;
+    }
+
     private void Start()
     {
+        if (!isGame1Scene)
+            return;
+
         GenerateLevel();
     }
 
     private void Update()
     {
-        if (!levelGenerated || player == null)
+        if (!isGame1Scene || !levelGenerated || player == null)
             return;
 
         float generationPoint =
@@ -111,10 +145,16 @@ public class ProceduralLevelGenerator : MonoBehaviour
         {
             GenerateNextRoom();
         }
+
+        CheckMissedPuzzleObjects();
+        CheckPortalProgress();
     }
 
     public void GenerateLevel()
     {
+        if (!isGame1Scene)
+            return;
+
         if (groundTilemap == null ||
             wallTilemap == null ||
             floorTile == null ||
@@ -166,7 +206,12 @@ public class ProceduralLevelGenerator : MonoBehaviour
         portalSpawned = false;
         levelGenerated = false;
 
+        spawnedPortal = null;
+        currentPortalRoomIndex = -1;
+
         puzzlePositions.Clear();
+        puzzleCarriers.Clear();
+        puzzleSwitchObjects.Clear();
         puzzleCells.Clear();
         occupiedSpawnCells.Clear();
 
@@ -203,7 +248,6 @@ public class ProceduralLevelGenerator : MonoBehaviour
         for (int i = 1; i <= objectiveRoomCount; i++)
             availableRooms.Add(i);
 
-        // Shuffle rooms so each switch gets a different room.
         for (int i = 0; i < availableRooms.Count; i++)
         {
             int randomIndex = Random.Range(i, availableRooms.Count);
@@ -269,7 +313,6 @@ public class ProceduralLevelGenerator : MonoBehaviour
 
         occupiedSpawnCells.Clear();
 
-        // Background.
         if (backgroundTilemap != null &&
             backgroundWallTile != null)
         {
@@ -285,7 +328,6 @@ public class ProceduralLevelGenerator : MonoBehaviour
             }
         }
 
-        // Ground floor.
         for (int x = startX; x < endX; x++)
         {
             groundTilemap.SetTile(
@@ -299,7 +341,6 @@ public class ProceduralLevelGenerator : MonoBehaviour
             );
         }
 
-        // Ceiling.
         for (int x = startX; x < endX; x++)
         {
             wallTilemap.SetTile(
@@ -308,7 +349,6 @@ public class ProceduralLevelGenerator : MonoBehaviour
             );
         }
 
-        // Close the left side of the starting room.
         if (roomIndex == 0)
         {
             for (int y = 2; y < roomHeight; y++)
@@ -335,15 +375,12 @@ public class ProceduralLevelGenerator : MonoBehaviour
             SpawnPortal(roomIndex);
     }
 
-    // Every room gets at least three guaranteed floating platforms.
-    // Remaining platforms are placed randomly for variety.
     private void GeneratePlatforms(int startX, int roomIndex)
     {
         int safeMinimumX = roomIndex == 0
             ? Mathf.CeilToInt(spawnSafeRadius) + 1
             : 2;
 
-        // Three separated lanes ensure that every room has midair platforms.
         int[] platformXPositions;
 
         if (roomIndex == 0)
@@ -365,29 +402,38 @@ public class ProceduralLevelGenerator : MonoBehaviour
             };
         }
 
+        int firstHeight = Random.Range(7, 9);
+
         int[] platformHeights =
-            {
-                Random.Range(7, 9),
-                Random.Range(9, 11),
-                Random.Range(11, 15)
-            };
+        {
+            firstHeight,
+            firstHeight + Random.Range(1, 3),
+            firstHeight + Random.Range(2, 5)
+        };
+
+        List<RectInt> placedPlatforms = new List<RectInt>();
 
         for (int i = 0; i < platformXPositions.Length; i++)
         {
             int platformX = platformXPositions[i];
+
             int platformY = Mathf.Clamp(
                 platformHeights[i],
                 3,
                 roomHeight - 2
             );
 
-            // Use four tiles for guaranteed platforms so all three fit
-            // inside a 20-tile room without overlapping each other.
-            CreatePlatform(platformX, platformY, 4);
+            int width = 4;
+
+            CreatePlatform(platformX, platformY, width);
+
+            placedPlatforms.Add(
+                new RectInt(platformX, platformY, width, 1)
+            );
         }
 
-        // Add extra randomized platforms beyond the guaranteed three.
-        int extraPlatformCount = Mathf.Max(0, platformCountPerRoom - 3);
+        int extraPlatformCount =
+            Mathf.Max(0, platformCountPerRoom - 3);
 
         for (int i = 0; i < extraPlatformCount; i++)
         {
@@ -399,24 +445,98 @@ public class ProceduralLevelGenerator : MonoBehaviour
             int minX = startX + (roomIndex == 0
                 ? Mathf.Max(6, safeMinimumX)
                 : 1);
+
             int maxX = startX + roomWidth - width - 1;
 
             if (maxX < minX)
                 continue;
 
-            int x = Random.Range(minX, maxX + 1);
-            int y = Random.Range(
-                Mathf.Max(3, minPlatformHeight),
-                Mathf.Min(roomHeight - 1, maxPlatformHeight + 1)
-            );
+            bool platformCreated = false;
 
-            CreatePlatform(x, y, width);
+            for (int attempt = 0; attempt < 30; attempt++)
+            {
+                RectInt referencePlatform =
+                    placedPlatforms[Random.Range(
+                        0,
+                        placedPlatforms.Count
+                    )];
+
+                int direction = Random.value < 0.5f ? -1 : 1;
+
+                int horizontalDistance = Random.Range(
+                    minHorizontalGap,
+                    maxHorizontalGap + 1
+                );
+
+                int x = referencePlatform.x +
+                    (direction * (
+                        referencePlatform.width +
+                        horizontalDistance
+                    ));
+
+                if (x < minX || x > maxX)
+                    continue;
+
+                int verticalDistance = Random.Range(
+                    minVerticalGap,
+                    maxVerticalGap + 1
+                );
+
+                int y = referencePlatform.y +
+                    (Random.value < 0.5f
+                        ? -verticalDistance
+                        : verticalDistance);
+
+                y = Mathf.Clamp(y, 3, roomHeight - 2);
+
+                RectInt candidate = new RectInt(x, y, width, 1);
+
+                if (!IsPlatformPositionAvailable(
+                    candidate,
+                    placedPlatforms))
+                {
+                    continue;
+                }
+
+                CreatePlatform(x, y, width);
+                placedPlatforms.Add(candidate);
+
+                platformCreated = true;
+                break;
+            }
+
+            if (!platformCreated)
+            {
+                Debug.Log(
+                    "Skipped extra platform because no suitable position was found."
+                );
+            }
         }
 
         Debug.Log(
-            "Generated at least 3 floating platforms in Room " +
+            "Generated floating platforms in Room " +
             (roomIndex + 1)
         );
+    }
+
+    private bool IsPlatformPositionAvailable(
+        RectInt candidate,
+        List<RectInt> placedPlatforms)
+    {
+        foreach (RectInt existing in placedPlatforms)
+        {
+            RectInt expanded = new RectInt(
+                existing.xMin - 1,
+                existing.yMin - 1,
+                existing.width + 2,
+                existing.height + 2
+            );
+
+            if (expanded.Overlaps(candidate))
+                return false;
+        }
+
+        return true;
     }
 
     private void GeneratePuzzlePlatforms(int roomIndex)
@@ -441,7 +561,6 @@ public class ProceduralLevelGenerator : MonoBehaviour
                 platformWidth
             );
 
-            // Prevent other objects from spawning inside this platform.
             for (int x = 0; x < platformWidth; x++)
             {
                 occupiedSpawnCells.Add(
@@ -546,17 +665,21 @@ public class ProceduralLevelGenerator : MonoBehaviour
     {
         foreach (KeyValuePair<int, Vector3Int> entry in puzzlePositions)
         {
+            int switchId = entry.Key;
             Vector3Int cell = entry.Value;
 
             if (roomIndex != cell.x / roomWidth)
                 continue;
 
-            int switchId = entry.Key;
+            if (puzzleSwitchObjects.ContainsKey(switchId) &&
+                puzzleSwitchObjects[switchId] != null)
+            {
+                continue;
+            }
 
             Vector3 spawnPosition =
                 groundTilemap.GetCellCenterWorld(cell);
 
-            // Create the switch.
             GameObject switchObject = Instantiate(
                 switchPrefab,
                 spawnPosition,
@@ -571,34 +694,37 @@ public class ProceduralLevelGenerator : MonoBehaviour
                 Debug.LogError(
                     "Switch prefab needs a Switch component!"
                 );
+
+                Destroy(switchObject);
+                continue;
             }
-            else
-            {
-                spawnedSwitch.Initialize(
-                    switchId,
-                    puzzleController
-                );
-            }
+
+            spawnedSwitch.Initialize(
+                switchId,
+                puzzleController
+            );
+
+            puzzleSwitchObjects[switchId] = switchObject;
 
             bool hideSwitchInPot =
                 Random.value < switchInPotChance;
 
             if (hideSwitchInPot)
             {
-                // Create the pot.
                 GameObject potObject = Instantiate(
                     potPrefab,
                     spawnPosition,
                     Quaternion.identity
                 );
 
-                // Give the pot its hidden switch.
                 Pot spawnedPot =
                     potObject.GetComponentInChildren<Pot>(true);
 
                 if (spawnedPot != null)
                 {
                     spawnedPot.SetHiddenSwitch(switchObject);
+
+                    puzzleCarriers[switchId] = potObject;
 
                     Debug.Log(
                         "Switch " + switchId +
@@ -610,10 +736,15 @@ public class ProceduralLevelGenerator : MonoBehaviour
                     Debug.LogError(
                         "Pot prefab is missing the Pot component!"
                     );
+
+                    Destroy(potObject);
+                    puzzleCarriers[switchId] = switchObject;
                 }
             }
             else
             {
+                puzzleCarriers[switchId] = switchObject;
+
                 Debug.Log(
                     "Switch " + switchId +
                     " spawned without a pot."
@@ -632,6 +763,134 @@ public class ProceduralLevelGenerator : MonoBehaviour
                 " in Room " + (roomIndex + 1)
             );
         }
+    }
+
+    private void CheckMissedPuzzleObjects()
+    {
+        if (puzzleController == null)
+            return;
+
+        foreach (KeyValuePair<int, GameObject> entry in puzzleSwitchObjects)
+        {
+            int switchId = entry.Key;
+            GameObject switchObject = entry.Value;
+
+            if (puzzleController.IsSwitchActivated(switchId))
+                continue;
+
+            if (switchObject == null)
+                continue;
+
+            GameObject carrier = null;
+
+            if (puzzleCarriers.TryGetValue(switchId, out carrier))
+            {
+                if (carrier == null)
+                    carrier = switchObject;
+            }
+            else
+            {
+                carrier = switchObject;
+            }
+
+            // If the switch is still hidden inside a pot,
+            // check the pot position. Otherwise check the switch.
+            GameObject objectToMove = carrier;
+
+            if (switchObject.activeInHierarchy)
+                objectToMove = switchObject;
+
+            if (objectToMove == null)
+                continue;
+
+            if (player.position.x >
+                objectToMove.transform.position.x + missedSwitchDistance)
+            {
+                MoveSwitchToNextRoom(switchId);
+            }
+        }
+    }
+
+    private void MoveSwitchToNextRoom(int switchId)
+    {
+        if (!puzzlePositions.ContainsKey(switchId))
+            return;
+
+        if (!puzzleSwitchObjects.ContainsKey(switchId))
+            return;
+
+        GameObject switchObject = puzzleSwitchObjects[switchId];
+
+        if (switchObject == null)
+            return;
+
+        GameObject carrier = null;
+
+        if (puzzleCarriers.TryGetValue(switchId, out carrier))
+        {
+            if (carrier == null)
+                carrier = switchObject;
+        }
+        else
+        {
+            carrier = switchObject;
+        }
+
+        int oldRoom =
+            puzzlePositions[switchId].x / roomWidth;
+
+        int newRoom = Mathf.Max(
+            nextRoomIndex,
+            oldRoom + 1
+        );
+
+        int startX = newRoom * roomWidth;
+
+        int minOffset = Mathf.Clamp(
+            missedSwitchMinX,
+            2,
+            roomWidth - 3
+        );
+
+        int maxOffset = Mathf.Clamp(
+            missedSwitchMaxX,
+            minOffset + 1,
+            roomWidth - 2
+        );
+
+        int x = startX + Random.Range(
+            minOffset,
+            maxOffset
+        );
+
+        Vector3Int newCell = new Vector3Int(x, 2, 0);
+
+        Vector3 newPosition =
+            groundTilemap.GetCellCenterWorld(newCell);
+
+        // Move the pot if the switch is still hidden.
+        // If the pot has already broken, move the switch itself.
+        if (switchObject.activeInHierarchy)
+        {
+            switchObject.transform.position = newPosition;
+            puzzleCarriers[switchId] = switchObject;
+        }
+        else if (carrier != null)
+        {
+            carrier.transform.position = newPosition;
+        }
+
+        Vector3Int oldCell = puzzlePositions[switchId];
+
+        puzzleCells.Remove(oldCell);
+        puzzleCells.Add(newCell);
+
+        puzzlePositions[switchId] = newCell;
+
+        Debug.Log(
+            "Player missed Switch " + switchId +
+            ". Moving it to Room " + (newRoom + 1)
+        );
     }
 
     private void SpawnAdditionalPots(
@@ -701,14 +960,12 @@ public class ProceduralLevelGenerator : MonoBehaviour
                 if (groundTilemap.GetTile(platformCell) != platformTile)
                     continue;
 
-                // Object sits above the platform tile.
                 cell = platformCell + Vector3Int.up;
             }
             else
             {
                 int x = Random.Range(startX + 2, endX - 2);
 
-                // Ground object position.
                 cell = new Vector3Int(x, 2, 0);
             }
 
@@ -1000,6 +1257,8 @@ public class ProceduralLevelGenerator : MonoBehaviour
         if (portalSpawned || portalPrefab == null)
             return;
 
+        currentPortalRoomIndex = roomIndex;
+
         int startX = roomIndex * roomWidth;
 
         Vector3Int portalCell =
@@ -1009,20 +1268,61 @@ public class ProceduralLevelGenerator : MonoBehaviour
             groundTilemap.GetCellCenterWorld(portalCell) +
             Vector3.right * portalOffsetX;
 
-        GameObject portalObject = Instantiate(
+        spawnedPortal = Instantiate(
             portalPrefab,
             portalPosition,
             Quaternion.identity
         );
 
-        portalObject.SetActive(false);
+        spawnedPortal.SetActive(false);
 
-        puzzleController.RegisterPortal(portalObject);
+        puzzleController.RegisterPortal(spawnedPortal);
 
         portalSpawned = true;
 
         Debug.Log(
             "Portal generated in Room " + (roomIndex + 1)
+        );
+    }
+
+    private void CheckPortalProgress()
+    {
+        if (!portalSpawned ||
+            spawnedPortal == null ||
+            !spawnedPortal.activeInHierarchy ||
+            player == null)
+        {
+            return;
+        }
+
+        if (player.position.x >
+            spawnedPortal.transform.position.x + 1f)
+        {
+            currentPortalRoomIndex++;
+
+            MovePortalToNextRoom();
+        }
+    }
+
+    private void MovePortalToNextRoom()
+    {
+        if (spawnedPortal == null)
+            return;
+
+        int startX = currentPortalRoomIndex * roomWidth;
+
+        Vector3Int portalCell =
+            new Vector3Int(startX + roomWidth - 4, 2, 0);
+
+        Vector3 portalPosition =
+            groundTilemap.GetCellCenterWorld(portalCell) +
+            Vector3.right * portalOffsetX;
+
+        spawnedPortal.transform.position = portalPosition;
+
+        Debug.Log(
+            "Player passed the portal. Portal moved to Room " +
+            (currentPortalRoomIndex + 1)
         );
     }
 

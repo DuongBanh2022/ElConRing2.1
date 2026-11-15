@@ -1,8 +1,7 @@
+
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-// Goes on Exit (loads a scene when the player touches it)
-// and on TitleManager (Button On Click).
 public class LevelPortal : MonoBehaviour
 {
     [Header("Portal Settings")]
@@ -12,8 +11,15 @@ public class LevelPortal : MonoBehaviour
     [Header("Portal Sound")]
     [SerializeField] private AudioClip portalEnterSound;
 
+    private bool isLoading;
+
     public void GoToScene(string targetScene)
     {
+        if (isLoading)
+            return;
+
+        isLoading = true;
+
         if (targetScene == "Game1")
         {
             GameSession.NewGame();
@@ -24,6 +30,9 @@ public class LevelPortal : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
+        if (isLoading)
+            return;
+
         if (!other.CompareTag("Player"))
             return;
 
@@ -32,8 +41,8 @@ public class LevelPortal : MonoBehaviour
             GameSession.SaveHighScore();
         }
 
-        // Play sound when the player enters the portal.
-        if (SoundManager.Instance != null)
+        if (SoundManager.Instance != null &&
+            portalEnterSound != null)
         {
             SoundManager.Instance.PlaySFX(portalEnterSound);
         }

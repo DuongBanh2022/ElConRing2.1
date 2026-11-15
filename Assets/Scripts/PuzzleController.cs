@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
+using UnityEngine.SceneManagement;
 
 public class PuzzleController : MonoBehaviour
 {
@@ -22,11 +23,24 @@ public class PuzzleController : MonoBehaviour
     private GameObject portal;
     private bool puzzleCompleted = false;
     private bool portalSoundPlayed = false;
+    private bool isGame1Scene;
 
     private Coroutine notificationCoroutine;
 
+    private void Awake()
+    {
+        isGame1Scene =
+            SceneManager.GetActiveScene().name == "Game1";
+
+        if (!isGame1Scene)
+            enabled = false;
+    }
+
     private void Start()
     {
+        if (!isGame1Scene)
+            return;
+
         UpdateSwitchCounter();
 
         if (portalNotificationText != null)
@@ -80,10 +94,9 @@ public class PuzzleController : MonoBehaviour
 
     public bool ActivateSwitch(int switchId)
     {
-        if (puzzleCompleted)
+        if (!isGame1Scene || puzzleCompleted)
             return false;
 
-        // A switch can only count once.
         if (!activatedSwitches.Add(switchId))
             return false;
 
@@ -101,6 +114,11 @@ public class PuzzleController : MonoBehaviour
         }
 
         return true;
+    }
+
+    public bool IsSwitchActivated(int switchId)
+    {
+        return activatedSwitches.Contains(switchId);
     }
 
     private void UpdateSwitchCounter()
@@ -177,4 +195,3 @@ public class PuzzleController : MonoBehaviour
         portalSoundPlayed = true;
     }
 }
-

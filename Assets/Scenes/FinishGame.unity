@@ -7517,6 +7517,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c97d969170925da409f87e8f7e7b27bb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HudController
+  playerController: {fileID: 0}
   scoreLabel: {fileID: 0}
   bestLabel: {fileID: 195283468}
   pausePanel: {fileID: 862803819}
@@ -8382,7 +8383,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: -8386927440408558131, guid: 37cf656fdfec3084f9112ef31885cc41, type: 3}
+  m_Sprite: {fileID: 6179127025154431671, guid: ce66f66e484228d4b87b221d845424a6, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
