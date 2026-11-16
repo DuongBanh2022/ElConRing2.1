@@ -6,11 +6,11 @@
 
 ## Project Overview
 
-This project is a 2D Metroivania platformer inspired by with a mix of Umamusume, Sonic 2D Action Platformer, and Elden Ring/Soulslike in general. The player explores procedurally generated rooms, moves between platforms, fights enemies, breaks objects, eats flowers, and activates hidden switches to unlock the portal; the ultimate goal is to reach the finish line.
+This project is a reissued from Project 1 of 2D Metroivania platformer inspired by with a mix of Umamusume, Sonic 2D Action Platformer, and Elden Ring/Soulslike genres in general. The player explores procedurally generated rooms, moves between platforms, fights enemies, breaks objects, eats flowers, and activates hidden switches to unlock the portal, which is the ultimate goal to reach the finish line.
 
 The game uses Unity's Input System for player controls, the Audio Mixer, Rigidbody2D for movement, Animator Controllers for character animations, StateMachineBehaviour scripts, ScriptableObjects for enemy properties, particle effects for collecting and destroying enemies, and procedural generation to create different room layouts.
 
-The player can use melee attacks and ranged projectiles to defeat enemies and break pots. Some pots contain hidden switches that help complete the room puzzle. Once all required switches are activated, the portal becomes available, allowing the player to reach the destination.
+The player can use melee attack and range projectile to defeat enemies and break pots. Some pots contain hidden switches that help complete the room puzzle. Once all required switches are activated, the portal becomes available, allowing the player to reach the destination.
 
 ## Script Summary
 
@@ -33,8 +33,8 @@ The project contains scripts for player control, procedural level generation, pu
 | `FlyEnemy.cs` | Controls flying enemy movement, including circular movement behavior, using its assigned stats. |
 | `Flower.cs` | Handles collectible objects, such as Flowers, and updates the player's collected amount. |
 | `SoundManager.cs` | Manages game audio and provides persistent sound management across scenes. |
-| `AttackHitBox.cs` | Stores gameplay state such as the player's collected Flower. |
-| `CameraFolllowScript.cs` | Controls camera following behavior during gameplay. |
+| `GameSession.cs` | Stores gameplay state such as the player's collected Flower. |
+| `CameraFolllow.cs` | Controls camera following behavior during gameplay. |
 | `AttackHitBox.cs` | Detects enemies or breakable objects inside the player's attack area and applies damage when the player attacks. |
 | `DropFlower.cs` | Handles the flower drop created when an enemy is defeated. |
 | `ExplosionEffect.cs` | Plays an explosion particle effect when an object, such as a pot or enemy, is destroyed. |
@@ -61,6 +61,7 @@ The TitleScreen scene provides the game's starting interface.
   - Menu
     - Resume (Button)
     - Quit (Button)
+    - NameLogo (Background Art)
   - HUDCanvas
     - BestLabel
 - PressAnybutton
@@ -101,6 +102,7 @@ The Room scene contains a playable room that demonstrates the switch and door pu
   - FlowerScore
 - Mambo (FlyEnemy)
 - BlackKnight (GroundEnemy)
+  - HP (Canvas)
 - Pot (Breakable)
 - Dandelion (Collectible)
 - PuzzleController
@@ -109,11 +111,11 @@ The Room scene contains a playable room that demonstrates the switch and door pu
 
 **Interaction**
 
-Playable Character name: Grass Wonder, wielding her main weapon, Naginata, with her basic movement and jump inputs to explore the level. The GroundCheck detects whether she is standing on the ground, while AttackHitboxF and AttackHitboxR handle attacks in different directions. GraceSpark provides a particle effect during gameplay, and BulletSpawn determines where projectiles are created from her Rifle.
+Playable Character name Grass Wonder, wielding her main weapon, Naginata, with her basic movement and jump inputs to explore the level. The GroundCheck detects whether she is standing on the ground, while AttackHitboxF and AttackHitboxR handle attacks in different directions. GraceSpark provides a particle effect during gameplay, and BulletSpawn determines where projectiles are created from her Rifle.
 
 The Grid contains the level's tilemaps, including the ground, walls, background, and decorations (A picture of a Cow Squirrel Hybrid). The player can activate the Switch objects to complete the puzzle and unlock the Door to move on to the next scene via the Portal. The InstructionCanvas displays gameplay instructions, while the UICanvas displays the game's HUD.
 
-Mambo (FlyEnemy) and BlackKnight (GroundEnemy) act as enemies. Grass can attack BlackKnight to drop Dandelion, Mambo drops non-collectible RigidBody ChickenLeg, both enemies have explosion particles when destroyed, and break the Pot to reveal to interact hidden Switch. Dandelion acts as a collectible, which is Grass's favorite food. The PuzzleController tracks switch activation and determines when the puzzle is completed. 
+Mambo (FlyEnemy) and BlackKnight (GroundEnemy) act as enemies. Grass can attack BlackKnight to drop Dandelion, Mambo drops non-collectible RigidBody ChickenLeg, both enemies have explosion particles when destroyed, and break the Pot to reveal to interact hidden Switch. Black Knight has HP system, along with HP bar slider to track the enemy health. Dandelion acts as a collectible, which is Grass's favorite food. The PuzzleController tracks switch activation and determines when the puzzle is completed. 
 
 The UI Canvas displays a working Pause Panel that pauses mid-game, allowing you to quit to the main menu scene and reload from the start.
 
